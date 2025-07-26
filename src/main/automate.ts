@@ -1,6 +1,6 @@
 // Based from https://github.com/Billy19191/automate-word-insert/blob/main/automate.mjs
 
-import { promisify } from "node:util";
+import util from "node:util";
 import fs from "node:fs";
 import path from "node:path";
 import ExcelJS from "exceljs";
@@ -8,6 +8,8 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import libre from "libreoffice-convert";
 import type { IpcSubmitFormInput } from "../ipcApi";
+
+const convert = util.promisify(libre.convert)
 
 export async function generateDocs({
   templateFileName,
@@ -66,7 +68,7 @@ export async function generateDocs({
         fs.writeFileSync(docxPath, docBuffer);
 
         try {
-          const pdfBuffer = await promisify(libre.convert)(docBuffer, ".pdf", undefined)
+          const pdfBuffer = await convert(docBuffer, ".pdf", undefined)
           const pdfFilename = `${companyNumber}_${companyInitial}${suffix}.pdf`;
           const pdfPath = path.join(outputDir, pdfFilename);
           fs.writeFileSync(pdfPath, pdfBuffer);
