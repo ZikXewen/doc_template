@@ -1,6 +1,7 @@
 import { dialog, ipcMain } from "electron";
 import type { IpcSubmitFormInput } from "../ipcApi";
 import { IpcMessages } from "../ipcMessages";
+import { generateDocs } from "./automate";
 
 export function setupIpcListeners() {
   ipcMain.handle(IpcMessages.SELECT_TEMPLATE_FILE, selectTemplateFile);
@@ -31,5 +32,5 @@ async function selectDatasheetFile() {
 }
 
 async function submitForm(input: IpcSubmitFormInput) {
-  console.log(IpcMessages.SUBMIT_FORM, input);
+  return await generateDocs(input);
 }
