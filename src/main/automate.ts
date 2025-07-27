@@ -9,7 +9,7 @@ import Docxtemplater from "docxtemplater";
 import libre from "libreoffice-convert";
 import type { IpcSubmitFormInput } from "../ipcApi";
 
-const convert = util.promisify(libre.convert)
+const convert = util.promisify(libre.convert);
 
 export async function generateDocs({
   templateFileName,
@@ -33,14 +33,18 @@ export async function generateDocs({
       const companyHeader = row.getCell("A").text?.trim() || "";
       const companyNumber = row.getCell("B").text?.trim() || "";
       const companyInitial = row.getCell("C").text?.trim() || "";
-      const dueDate = row.getCell("D").text?.trim() || "";
-      const address = row.getCell("E").text?.trim() || "";
+      const scodDate = row.getCell("D").text?.trim() || "";
+      const paDate = row.getCell("E").text?.trim() || "";
+      const siteLocation = row.getCell("F").text?.trim() || "";
+      const address = row.getCell("G").text?.trim() || "";
 
       if (
         !companyHeader ||
         !companyNumber ||
         !companyInitial ||
-        !dueDate ||
+        !scodDate ||
+        !paDate ||
+        !siteLocation ||
         !address
       ) {
         console.log(`Skipping row with missing data: ${companyNumber}`);
@@ -55,10 +59,12 @@ export async function generateDocs({
         });
 
         doc.render({
+          CompanyHeader: companyHeader,
           CompanyNumber: companyNumber,
           CompanyInitial: companyInitial,
-          CompanyHeader: companyHeader,
-          DueDate: dueDate,
+          SCODDate: scodDate,
+          PADate: paDate,
+          SiteLocation: siteLocation,
           Address: address,
         });
 
@@ -68,7 +74,7 @@ export async function generateDocs({
         fs.writeFileSync(docxPath, docBuffer);
 
         try {
-          const pdfBuffer = await convert(docBuffer, ".pdf", undefined)
+          const pdfBuffer = await convert(docBuffer, ".pdf", undefined);
           const pdfFilename = `${companyNumber}_${companyInitial}${suffix}.pdf`;
           const pdfPath = path.join(outputDir, pdfFilename);
           fs.writeFileSync(pdfPath, pdfBuffer);
