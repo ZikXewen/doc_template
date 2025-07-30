@@ -5,4 +5,5 @@ export const IpcMessages = {
   SUBMIT_FORM: "submit_form",
   OPEN_OUTPUT_FOLDER: "open_output_folder",
   CANCEL_OPERATION: "cancel_operation",
+  PREVIEW_TEMPLATE_AND_SHEET: "preview_template_and_sheet",
 };

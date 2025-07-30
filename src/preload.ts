@@ -10,6 +10,8 @@ const ipcApi: IpcApi = {
   submitForm: (input) => ipcRenderer.invoke(IpcMessages.SUBMIT_FORM, input),
   openOutputFolder: () => ipcRenderer.invoke(IpcMessages.OPEN_OUTPUT_FOLDER),
   cancelOperation: () => ipcRenderer.invoke(IpcMessages.CANCEL_OPERATION),
+  previewTemplateAndSheet: (templateFileName, datasheetFileName) =>
+    ipcRenderer.invoke(IpcMessages.PREVIEW_TEMPLATE_AND_SHEET, templateFileName, datasheetFileName),
 };
 
 contextBridge.exposeInMainWorld("ipcApi", ipcApi);
@@ -22,4 +24,8 @@ contextBridge.exposeInMainWorld("electron", {
       ipcRenderer.removeListener(channel, func);
     },
   },
+});
+contextBridge.exposeInMainWorld("settingsApi", {
+  load: () => ipcRenderer.invoke("load_settings"),
+  save: (settings: any) => ipcRenderer.invoke("save_settings", settings),
 });

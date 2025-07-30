@@ -1,10 +1,35 @@
 import { app, dialog, ipcMain, shell } from "electron";
 import type { IpcSubmitFormInput } from "../ipcApi";
 import { IpcMessages } from "../ipcMessages";
-import { generateDocs } from "./automate";
+import { generateDocs, previewTemplateAndSheet } from "./automate";
 import * as path from "path";
+import fs from "node:fs";
 
 let cancelRequested = false;
+
+const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
+
+type Settings = {
+  templateFileName?: string;
+  datasheetFileName?: string;
+  suffix?: string;
+  outputDir?: string;
+};
+
+function loadSettings(): Settings {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8"));
+    }
+  } catch {}
+  return {};
+}
+
+function saveSettings(settings: Settings) {
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf-8");
+  } catch {}
+}
 
 export function setupIpcListeners() {
   ipcMain.handle(IpcMessages.SELECT_TEMPLATE_FILE, selectTemplateFile);
@@ -16,6 +41,11 @@ export function setupIpcListeners() {
   ipcMain.handle(IpcMessages.CANCEL_OPERATION, () => {
     cancelRequested = true;
   });
+  ipcMain.handle(IpcMessages.PREVIEW_TEMPLATE_AND_SHEET, async (_, templateFileName: string, datasheetFileName: string) => {
+    return await previewTemplateAndSheet(templateFileName, datasheetFileName);
+  });
+  ipcMain.handle("load_settings", () => loadSettings());
+  ipcMain.handle("save_settings", (_event, settings: Settings) => saveSettings(settings));
 }
 
 async function openOutputFolder() {

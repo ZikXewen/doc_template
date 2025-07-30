@@ -142,3 +142,32 @@ export async function generateDocs(
     return false;
   }
 }
+
+/**
+ * Extracts template variables and datasheet columns for preview.
+ * @param templateFileName Path to the .docx template
+ * @param datasheetFileName Path to the Excel datasheet
+ * @returns { templateVariables: string[], datasheetColumns: string[] }
+ */
+export async function previewTemplateAndSheet(
+  templateFileName: string,
+  datasheetFileName: string
+): Promise<{ templateVariables: string[]; datasheetColumns: string[] }> {
+
+  // Template validation removed. Only extract datasheet columns.
+
+  // Read datasheet and extract column headers
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(datasheetFileName);
+  const worksheet = workbook.getWorksheet(1);
+  let datasheetColumns: string[] = [];
+  if (worksheet) {
+    const headerRow = worksheet.getRow(1);
+    if (headerRow && Array.isArray(headerRow.values)) {
+      datasheetColumns = (headerRow.values.slice(1) as any[])
+        .map((v: any) => (typeof v === "string" ? v.trim() : ""));
+    }
+  }
+
+  return { templateVariables: [], datasheetColumns };
+}

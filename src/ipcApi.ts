@@ -4,6 +4,10 @@ export type IpcApi = {
   submitForm: (input: IpcSubmitFormInput) => Promise<boolean>;
   openOutputFolder: () => Promise<void>;
   cancelOperation: () => Promise<void>;
+  previewTemplateAndSheet: (
+    templateFileName: string,
+    datasheetFileName: string
+  ) => Promise<{ templateVariables: string[]; datasheetColumns: string[] }>;
 };
 
 export type IpcSubmitFormInput = {
