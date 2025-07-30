@@ -8,14 +8,14 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import libre from "libreoffice-convert";
 import type { IpcSubmitFormInput } from "../ipcApi";
+import { BrowserWindow } from "electron";
 
 const convert = util.promisify(libre.convert);
 
-export async function generateDocs({
-  templateFileName,
-  datasheetFileName,
-  suffix,
-}: IpcSubmitFormInput) {
+export async function generateDocs(
+  { templateFileName, datasheetFileName, suffix }: IpcSubmitFormInput,
+  isCancelled?: () => boolean
+) {
   try {
     const outputDir = "output";
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
@@ -29,23 +29,37 @@ export async function generateDocs({
     let successCount = 0;
     let errorCount = 0;
 
-    for (const row of worksheet?.getRows(2, worksheet.rowCount - 1) || []) {
+    const rows = worksheet?.getRows(2, worksheet.rowCount - 1) || [];
+    const total = rows.length;
+
+    // Get the main window to send progress
+    const win = BrowserWindow.getAllWindows()[0];
+
+    let current = 0;
+    for (const row of rows) {
       const companyHeader = row.getCell("A").text?.trim() || "";
       const companyNumber = row.getCell("B").text?.trim() || "";
       const companyInitial = row.getCell("C").text?.trim() || "";
-      const scodDate = row.getCell("D").text?.trim() || "";
-      const paDate = row.getCell("E").text?.trim() || "";
-      const siteLocation = row.getCell("F").text?.trim() || "";
-      const address = row.getCell("G").text?.trim() || "";
+      const input1 = row.getCell("D").text?.trim() || "";
+      const input2 = row.getCell("E").text?.trim() || "";
+      const input3 = row.getCell("F").text?.trim() || "";
+      const input4 = row.getCell("G").text?.trim() || "";
+      const input5 = row.getCell("G").text?.trim() || "";
+
+      if (isCancelled && isCancelled()) {
+        console.log("Operation cancelled by user.");
+        break;
+      }
 
       if (
         !companyHeader ||
         !companyNumber ||
         !companyInitial ||
-        !scodDate ||
-        !paDate ||
-        !siteLocation ||
-        !address
+        !input1 ||
+        !input2 ||
+        !input3 ||
+        !input4 ||
+        !input5
       ) {
         console.log(`Skipping row with missing data: ${companyNumber}`);
         continue;
@@ -62,10 +76,11 @@ export async function generateDocs({
           CompanyHeader: companyHeader,
           CompanyNumber: companyNumber,
           CompanyInitial: companyInitial,
-          SCODDate: scodDate,
-          PADate: paDate,
-          SiteLocation: siteLocation,
-          Address: address,
+          Input1: input1,
+          Input2: input2,
+          Input3: input3,
+          Input4: input4,
+          Input5: input5,
         });
 
         const docBuffer = doc.getZip().generate({ type: "nodebuffer" });
@@ -93,11 +108,19 @@ export async function generateDocs({
         );
         errorCount++;
       }
+
+      current++;
+      // Send progress to renderer
+      console.log("Sending progress", { current, total });
+      win?.webContents.send("progress", { current, total });
     }
 
     console.log(`\nProcess completed!`);
     console.log(`Successful: ${successCount}`);
     console.log(`Errors: ${errorCount}`);
+    // Send 100% progress at the end
+    win?.webContents.send("progress", { current: total, total });
+
     return true;
   } catch (error: unknown) {
     if (!(error instanceof Error) || error.name !== "TemplateError") {

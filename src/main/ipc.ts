@@ -1,7 +1,10 @@
-import { dialog, ipcMain } from "electron";
+import { app, dialog, ipcMain, shell } from "electron";
 import type { IpcSubmitFormInput } from "../ipcApi";
 import { IpcMessages } from "../ipcMessages";
 import { generateDocs } from "./automate";
+import * as path from "path";
+
+let cancelRequested = false;
 
 export function setupIpcListeners() {
   ipcMain.handle(IpcMessages.SELECT_TEMPLATE_FILE, selectTemplateFile);
@@ -9,6 +12,21 @@ export function setupIpcListeners() {
   ipcMain.handle(IpcMessages.SUBMIT_FORM, (_, input: IpcSubmitFormInput) =>
     submitForm(input),
   );
+  ipcMain.handle(IpcMessages.OPEN_OUTPUT_FOLDER, openOutputFolder);
+  ipcMain.handle(IpcMessages.CANCEL_OPERATION, () => {
+    cancelRequested = true;
+  });
+}
+
+async function openOutputFolder() {
+  // Use process.resourcesPath in production, app.getAppPath() in dev
+  const isPackaged = app.isPackaged;
+  const basePath = isPackaged ? process.resourcesPath : app.getAppPath();
+  // Go up one directory from resourcesPath to reach the exe folder
+  const outputPath = isPackaged
+    ? path.join(process.resourcesPath, "..", "output")
+    : path.join(app.getAppPath(), "output");
+  await shell.openPath(outputPath);
 }
 
 async function selectTemplateFile() {
@@ -32,5 +50,6 @@ async function selectDatasheetFile() {
 }
 
 async function submitForm(input: IpcSubmitFormInput) {
-  return await generateDocs(input);
+  cancelRequested = false;
+  return await generateDocs(input, () => cancelRequested);
 }
